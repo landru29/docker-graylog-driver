@@ -1,10 +1,13 @@
 {
 	"description": "Graylog logger",
-	"documentation": "-",
+	"documentation": "https://github.com/landru29/docker-graylog-driver",
 	"entrypoint": ["/usr/bin/docker-graylog-driver"],
 	"interface": {
 		"types": ["docker.logdriver/1.0"],
 		"socket": "mylogdriver.sock"
+	},
+	"network": {
+		"type": "host"
 	},
 	"env": [
 		{

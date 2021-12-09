@@ -23,7 +23,7 @@ build: clean
 	cp config.json ./plugin-build/
 	docker rm -vf rootfsctr
 
-create-plugin: build
+plugin: build
 	@echo "### remove existing plugin ${PLUGIN_NAME}${TAG} if exists"
 	docker plugin rm -f ${PLUGIN_NAME}${TAG} || true
 	@echo "### create new plugin ${PLUGIN_NAME}${TAG} from ./plugin-build"
@@ -31,7 +31,7 @@ create-plugin: build
 	@echo "### enable plugin ${PLUGIN_NAME}${TAG}"
 	docker plugin enable ${PLUGIN_NAME}${TAG}
 
-push-plugin: create-plugin
+publish: plugin
 	docker plugin push ${PLUGIN_NAME}${TAG}
 
 

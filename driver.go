@@ -14,7 +14,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Graylog2/go-gelf/gelf"
 	"github.com/containerd/fifo"
 	"github.com/docker/docker/api/types/plugins/logdriver"
 	"github.com/docker/docker/daemon/logger"
@@ -22,6 +21,7 @@ import (
 	"github.com/docker/docker/pkg/urlutil"
 	protoio "github.com/gogo/protobuf/io"
 	"github.com/pkg/errors"
+	"gopkg.in/Graylog2/go-gelf.v1/gelf"
 )
 
 type driver struct {
@@ -35,6 +35,15 @@ type dockerInput struct {
 	gelf     *gelf.Writer
 	hostname string
 	extra    map[string]interface{}
+}
+
+func (d dockerInput) Close() error {
+	err := d.gelf.Close()
+	if err != nil {
+		return err
+	}
+
+	return d.stream.Close()
 }
 
 func newDriver() *driver {
@@ -123,23 +132,39 @@ func (d *driver) StopLogging(file string) error {
 }
 
 func consumeLog(lf *dockerInput) {
+	lf.gelf.WriteMessage(&gelf.Message{
+		Version: "1.1",
+		Host:    lf.hostname,
+		Short:   "starting logging",
+		Level:   6,
+	})
 	dec := protoio.NewUint32DelimitedReader(lf.stream, binary.BigEndian, 1e6)
 	defer dec.Close()
+	defer lf.Close()
 	var buf logdriver.LogEntry
 	for {
+		buf.Reset()
 		if err := dec.ReadMsg(&buf); err != nil {
 			if err == io.EOF {
-				fmt.Fprintf(os.Stderr, "FIFO Stream closed  %s", err.Error())
-				lf.stream.Close()
+				lf.gelf.WriteMessage(&gelf.Message{
+					Version: "1.1",
+					Host:    lf.hostname,
+					Short:   fmt.Sprintf("FIFO Stream closed  %s", err),
+					Level:   3,
+				})
 				return
 			}
 			dec = protoio.NewUint32DelimitedReader(lf.stream, binary.BigEndian, 1e6)
 		}
 
+		if len(buf.Line) < 10 {
+			continue
+		}
+
 		data := map[string]interface{}{}
 		err := json.Unmarshal(buf.Line, &data)
 		if err != nil {
-			data["msg"] = string(buf.Line)
+			continue
 		}
 
 		message := "no message"
@@ -168,29 +193,23 @@ func consumeLog(lf *dockerInput) {
 			}
 		}
 
-		rawExtra, err := json.Marshal(extra)
-		if err == nil {
-			buf.Reset()
-
-			continue
-		}
-
-		m := gelf.Message{
+		if err := lf.gelf.WriteMessage(&gelf.Message{
 			Version:  version,
 			Host:     lf.hostname,
 			Short:    message,
 			TimeUnix: float64(buf.TimeNano/int64(time.Millisecond)) / 1000.0,
 			Level:    level,
-			RawExtra: rawExtra,
-		}
-
-		if err := lf.gelf.WriteMessage(&m); err != nil {
-			buf.Reset()
+			Extra:    extra,
+		}); err != nil {
+			lf.gelf.WriteMessage(&gelf.Message{
+				Version: "1.1",
+				Host:    lf.hostname,
+				Short:   fmt.Sprintf("gelf send  %s", err.Error()),
+				Level:   6,
+			})
 
 			continue
 		}
-
-		buf.Reset()
 	}
 }
 

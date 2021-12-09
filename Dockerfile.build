@@ -1,4 +1,18 @@
 FROM  golang:1.17
 
-COPY . /go/src/github.com/landru29/docker-graylog-driver
-RUN cd /go/src/github.com/landru29/docker-graylog-driver && go get && go build --ldflags '-extldflags "-static"' -o /usr/bin/docker-graylog-driver
+WORKDIR /go/src/github.com/landru29/docker-graylog-driver
+
+COPY go.mod .
+COPY go.sum .
+COPY . .
+
+RUN go get
+#RUN go build --ldflags '-extldflags "-static"' -o /usr/bin/docker-graylog-driver
+
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o /usr/bin/docker-graylog-driver
+
+FROM alpine:3.7
+RUN apk --no-cache add ca-certificates
+COPY --from=0 /usr/bin/docker-graylog-driver /usr/bin/
+WORKDIR /usr/bin/
+ENTRYPOINT ["/usr/bin/docker-graylog-driver"]
