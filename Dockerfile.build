@@ -1,0 +1,4 @@
+FROM  golang:1.17
+
+COPY . /go/src/github.com/landru29/docker-graylog-driver
+RUN cd /go/src/github.com/landru29/docker-graylog-driver && go get && go build --ldflags '-extldflags "-static"' -o /usr/bin/docker-graylog-driver

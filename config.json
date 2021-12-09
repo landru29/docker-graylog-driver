@@ -1,0 +1,19 @@
+{
+	"description": "Graylog logger",
+	"documentation": "-",
+	"entrypoint": ["/usr/bin/docker-graylog-driver"],
+	"interface": {
+		"types": ["docker.logdriver/1.0"],
+		"socket": "mylogdriver.sock"
+	},
+	"env": [
+		{
+			"name": "SOME_CFG_FOR_PLUGIN",
+			"description": "This is how you can set config params for the plugin",
+			"value": "somevalue",
+			"settable": ["value"]
+		}
+	]
+}
+
+
