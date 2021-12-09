@@ -1,5 +1,5 @@
 # Plugin parameters
-PLUGIN_NAME=landru29/graylogdriver
+PLUGIN_NAME=$(REGISTRY)/graylogdriver
 GIT_CURRENT_HASH=$(shell git log -n1 --pretty='%h')
 TAG=$(shell git describe --exact-match --tags $(GIT_CURRENT_HASH) 2>/dev/null || echo "latest")
 ifneq ($(strip $(TAG)),)
@@ -23,7 +23,7 @@ build: clean
 	cp config.json ./plugin-build/
 	docker rm -vf rootfsctr
 
-create-plugin: build
+plugin: build
 	@echo "### remove existing plugin ${PLUGIN_NAME}${TAG} if exists"
 	docker plugin rm -f ${PLUGIN_NAME}${TAG} || true
 	@echo "### create new plugin ${PLUGIN_NAME}${TAG} from ./plugin-build"
@@ -31,7 +31,7 @@ create-plugin: build
 	@echo "### enable plugin ${PLUGIN_NAME}${TAG}"
 	docker plugin enable ${PLUGIN_NAME}${TAG}
 
-push-plugin: create-plugin
+publish: plugin
 	docker plugin push ${PLUGIN_NAME}${TAG}
 
 

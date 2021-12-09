@@ -3,12 +3,12 @@ module github.com/landru29/graylogdriver
 go 1.17
 
 require (
-	github.com/Graylog2/go-gelf v0.0.0-20170811154226-7ebf4f536d8f
 	github.com/containerd/fifo v1.0.0
 	github.com/docker/docker v20.10.11+incompatible
 	github.com/docker/go-plugins-helpers v0.0.0-20210623094020-7ef169fb8b8e
 	github.com/gogo/protobuf v1.3.2
 	github.com/pkg/errors v0.9.1
+	gopkg.in/Graylog2/go-gelf.v1 v1.0.0-20170811154226-7ebf4f536d8f
 )
 
 require (
