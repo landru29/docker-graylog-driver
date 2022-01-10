@@ -168,7 +168,14 @@ func consumeLog(lf *dockerInput) {
 		}
 
 		message := "no message"
+
+		// gelf version
 		if msg, ok := data["short_message"].(string); ok {
+			message = msg
+		}
+
+		// json version
+		if msg, ok := data["msg"].(string); ok {
 			message = msg
 		}
 
@@ -178,8 +185,28 @@ func consumeLog(lf *dockerInput) {
 		}
 
 		level := int32(6)
+
 		if lev, ok := data["level"].(int32); ok {
 			level = lev
+		} else {
+			if levStr, ok := data["level"].(string); ok {
+				switch levStr {
+				case "panic":
+					level = 0
+				case "fatal":
+					level = 2
+				case "error":
+					level = 3
+				case "warn", "warning":
+					level = 4
+				case "info":
+					level = 6
+				case "debug":
+					level = 7
+				case "trace":
+					level = 8
+				}
+			}
 		}
 
 		extra := map[string]interface{}{}
